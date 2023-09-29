@@ -4,6 +4,9 @@ import string
 from Levenshtein import distance as levenshtein_distance
 
 
+MINIMUM_CHANCES = 3000  # arbitrary cutoff
+
+
 def discard_word(word):
     if word in ["", "l_english:"]:
         return True
@@ -39,7 +42,7 @@ def clean_line(line):
 
 
 def clean_word(word):
-    return word.translate(str.maketrans("", "", string.punctuation)).lower().replace("‘", "").replace("’", "")
+    return word.translate(str.maketrans("", "", string.punctuation)).lower().replace("‘", "").replace("’", "").strip()
 
 
 def parse_file(file_path, word_count: defaultdict):
@@ -66,27 +69,32 @@ def main():
         print(file_path)
         parse_file(file_path, word_count)
 
-    word_count = sorted(word_count.items(), key=lambda x: x[1], reverse=True)
-    print(f"Found {len(word_count)} unique words")
-    one_words = [word for word, count in word_count if count == 1]
+    total_words = sum(word_count.values())
+    print(f"Found {total_words} words, and {len(word_count)} unique words")
+    words_appearing_once = [word for word, count in word_count.items() if count == 1]
+
+    # common words are more likely to have typos
+    # longer words are more likely to have typos
+    prior_word_is_typo = sorted(((word, count * len(word)) for word, count in word_count.items()), key=lambda x: x[1], reverse=True)
+
     possible_typos = []
-    for common_word, count in word_count:
-        if count < 500:
+    for common_word, prior_weight in prior_word_is_typo:
+        if prior_weight < MINIMUM_CHANCES:
             # arbitrary termination condition
             break
-        # starting from largest count
         if len(common_word) < 4:
             # skip these
             continue
 
-        for rare_word in one_words:
+        for rare_word in words_appearing_once:
             if levenshtein_distance(common_word, rare_word) == 1:
-                possible_typos.append((common_word, rare_word))
+                possible_typos.append((common_word, rare_word, prior_weight))
     print(f"Found {len(possible_typos)} possible typos")
 
     with open("output.txt", "w", encoding="utf-8-sig") as f:
-        for common_word, rare_word in possible_typos:
-            f.write(f"{common_word},{rare_word}\n")
+        f.write("common_word,rare_word,prior_weight\n")
+        for common_word, rare_word, prior_weight in possible_typos:
+            f.write(f"{common_word},{rare_word},{prior_weight}\n")
 
 
 if __name__ == "__main__":
