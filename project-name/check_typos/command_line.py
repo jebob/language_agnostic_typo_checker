@@ -36,7 +36,7 @@ def clean_line(line):
     line = strip_magic_word(line, "[", "]")
     line = strip_magic_word(line, "§", "§")
     # Remve newlines, em & en hyphens
-    line = line.strip().replace("\n", " ").replace(r"\n", " ").replace("-", " ").replace("—", " ")
+    line = line.strip().replace("\n", " ").replace(r"\n", " ").replace("-", " ").replace("—", " ").replace("–", " ")
     # first word is a key, not interesting
     return line.split(" ")[1:]
 
@@ -91,7 +91,7 @@ def main():
                 possible_typos.append((common_word, rare_word, prior_weight))
     print(f"Found {len(possible_typos)} possible typos")
 
-    with open("output.txt", "w", encoding="utf-8-sig") as f:
+    with open("output.csv", "w", encoding="utf-8-sig") as f:
         f.write("common_word,rare_word,prior_weight\n")
         for common_word, rare_word, prior_weight in possible_typos:
             f.write(f"{common_word},{rare_word},{prior_weight}\n")
