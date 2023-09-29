@@ -5,6 +5,7 @@ from Levenshtein import distance as levenshtein_distance
 
 
 MINIMUM_CHANCES = 3000  # arbitrary cutoff
+PUNC_LIST = ".!?,;:'\"'()[]®\\"  # Gets stripped from around, but not inside, words
 
 
 def discard_word(word):
@@ -36,13 +37,23 @@ def clean_line(line):
     line = strip_magic_word(line, "[", "]")
     line = strip_magic_word(line, "§", "§")
     # Remve newlines, em & en hyphens
-    line = line.strip().replace("\n", " ").replace(r"\n", " ").replace("-", " ").replace("—", " ").replace("–", " ")
+    line = (
+        line.strip()
+        .replace("\n", " ")
+        .replace(r"\n", " ")
+        .replace("-", " ")
+        .replace("—", " ")
+        .replace("–", " ")
+        .replace("...", " ")
+        .replace("‘", "'")
+        .replace("’", "'")
+    )
     # first word is a key, not interesting
     return line.split(" ")[1:]
 
 
 def clean_word(word):
-    return word.translate(str.maketrans("", "", string.punctuation)).lower().replace("‘", "").replace("’", "").strip()
+    return word.strip(PUNC_LIST).lower().strip()
 
 
 def parse_file(file_path, word_count: defaultdict):
@@ -75,7 +86,9 @@ def main():
 
     # common words are more likely to have typos
     # longer words are more likely to have typos
-    prior_word_is_typo = sorted(((word, count * len(word)) for word, count in word_count.items()), key=lambda x: x[1], reverse=True)
+    prior_word_is_typo = sorted(
+        ((word, count * len(word)) for word, count in word_count.items()), key=lambda x: x[1], reverse=True
+    )
 
     possible_typos = []
     for common_word, prior_weight in prior_word_is_typo:
@@ -86,9 +99,12 @@ def main():
             # skip these
             continue
 
-        for rare_word in words_appearing_once:
+        for rare_word in words_appearing_once[:]:
             if levenshtein_distance(common_word, rare_word) == 1:
+                # Found a possible hit!
                 possible_typos.append((common_word, rare_word, prior_weight))
+                # Don't flag possible rare words more than once
+                words_appearing_once.remove(rare_word) 
     print(f"Found {len(possible_typos)} possible typos")
 
     with open("output.csv", "w", encoding="utf-8-sig") as f:
