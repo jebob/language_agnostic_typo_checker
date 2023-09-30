@@ -1,10 +1,9 @@
 from collections import defaultdict
 from pathlib import Path
-import string
 from Levenshtein import distance as levenshtein_distance
 
 
-MINIMUM_CHANCES = 3000  # arbitrary cutoff
+DETECTION_THRESHOLD = 3000  # arbitrary units
 PUNC_LIST = ".!?,;:'\"'()[]®\\"  # Gets stripped from around, but not inside, words
 
 
@@ -18,6 +17,7 @@ def discard_word(word):
 
 
 def strip_magic_word(line, lsep, rsep):
+    """In e.g. the string 'I am going to [GetUserDestination]', remove the magic word [GetUserDestination]"""
     lsep_position = line.find(lsep)
     if lsep_position >= 0:
         rsep_position = line[lsep_position + 1 :].find(rsep) + lsep_position
@@ -36,7 +36,7 @@ def clean_line(line):
     # Remove some variables
     line = strip_magic_word(line, "[", "]")
     line = strip_magic_word(line, "§", "§")
-    # Remve newlines, em & en hyphens
+    # Remve newlines, some word separators
     line = (
         line.strip()
         .replace("\n", " ")
@@ -57,9 +57,8 @@ def clean_word(word):
 
 
 def parse_file(file_path, word_count: defaultdict):
-    with open(file_path, encoding="utf-8-sig") as f:
-        text = f.read()
-        for line in text.split("\n"):
+    with open(file_path, encoding="utf-8-sig") as file:
+        for line in file:
             for word in clean_line(line):
                 word = clean_word(word)
                 if discard_word(word):
@@ -70,10 +69,7 @@ def parse_file(file_path, word_count: defaultdict):
 def main():
     word_count = defaultdict(int)
     root_path = Path("C:\Projects\equestria_dev") / "localisation" / "english"
-    # file_paths = [root_path / "country_BOI_l_english.yml"]
-    file_paths = root_path.glob("*.yml")
-
-    for file_path in file_paths:
+    for file_path in root_path.glob("*.yml"):
         if file_path.name in ["events_l_english.yml"]:
             # vanilla events?
             continue
@@ -92,7 +88,7 @@ def main():
 
     possible_typos = []
     for common_word, prior_weight in prior_word_is_typo:
-        if prior_weight < MINIMUM_CHANCES:
+        if prior_weight < DETECTION_THRESHOLD:
             # arbitrary termination condition
             break
         if len(common_word) < 4:
