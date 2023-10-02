@@ -88,8 +88,8 @@ def main():
     )
 
     possible_typos = []
-    for common_word, prior_weight in common_word_and_prior:
-        if prior_weight < DETECTION_THRESHOLD:
+    for common_word, relative_likelihood in common_word_and_prior:
+        if relative_likelihood < DETECTION_THRESHOLD:
             # termination condition
             break
         if len(common_word) < 4:
@@ -99,15 +99,15 @@ def main():
         for rare_word in words_appearing_once[:]:
             if levenshtein_distance(common_word, rare_word) == 1:
                 # Found a possible hit!
-                possible_typos.append((common_word, rare_word, prior_weight))
+                possible_typos.append((common_word, rare_word, relative_likelihood))
                 # Don't flag possible rare words more than once
                 words_appearing_once.remove(rare_word)
     print(f"Found {len(possible_typos)} possible typos")
 
     with open("output.csv", "w", encoding="utf-8-sig") as f:
-        f.write("common_word,rare_word,prior_weight\n")
-        for common_word, rare_word, prior_weight in possible_typos:
-            f.write(f"{common_word},{rare_word},{prior_weight}\n")
+        f.write("common_word,rare_word,relative_likelihood\n")
+        for common_word, rare_word, relative_likelihood in possible_typos:
+            f.write(f"{common_word},{rare_word},{relative_likelihood}\n")
 
 
 if __name__ == "__main__":
