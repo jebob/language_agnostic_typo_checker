@@ -4,28 +4,7 @@ from Levenshtein import distance as levenshtein_distance
 
 
 DETECTION_THRESHOLD = 3000  # arbitrary units
-PUNC_LIST = ".!?,;:'\"'()[]®\\"  # Gets stripped from around, but not inside, words
-
-
-def discard_word(word):
-    if word in ["", "l_english:"]:
-        return True
-    for c in word:
-        if c.isnumeric():
-            return True
-    return False
-
-
-def strip_magic_word(line, lsep, rsep):
-    """In e.g. the string 'I am going to [GetUserDestination]', remove the magic word [GetUserDestination]"""
-    lsep_position = line.find(lsep)
-    if lsep_position >= 0:
-        rsep_position = line[lsep_position + 1 :].find(rsep) + lsep_position
-        if rsep_position >= lsep_position:
-            # found one!
-            result = strip_magic_word(line[:lsep_position] + line[(rsep_position + 1) :], lsep, rsep)
-            return result
-    return line
+PUNC_LIST = ".!?,;:\"'()[]®\\"  # Gets stripped from around, but not inside, words
 
 
 def clean_line(line):
@@ -54,6 +33,27 @@ def clean_line(line):
 
 def clean_word(word):
     return word.strip(PUNC_LIST).lower().strip()
+
+
+def discard_word(word):
+    if word in ["", "l_english:"]:
+        return True
+    for c in word:
+        if c.isnumeric():
+            return True
+    return False
+
+
+def strip_magic_word(line, lsep, rsep):
+    """In e.g. the string 'I am going to [GetUserDestination]', remove the magic word [GetUserDestination]"""
+    lsep_position = line.find(lsep)
+    if lsep_position >= 0:
+        rsep_position = line[lsep_position + 1 :].find(rsep) + lsep_position
+        if rsep_position >= lsep_position:
+            # found one!
+            result = strip_magic_word(line[:lsep_position] + line[(rsep_position + 1) :], lsep, rsep)
+            return result
+    return line
 
 
 def parse_file(file_path, word_count: defaultdict):
@@ -100,7 +100,7 @@ def main():
                 # Found a possible hit!
                 possible_typos.append((common_word, rare_word, prior_weight))
                 # Don't flag possible rare words more than once
-                words_appearing_once.remove(rare_word) 
+                words_appearing_once.remove(rare_word)
     print(f"Found {len(possible_typos)} possible typos")
 
     with open("output.csv", "w", encoding="utf-8-sig") as f:
