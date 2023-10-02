@@ -80,16 +80,17 @@ def main():
     print(f"Found {total_words} words, and {len(word_count)} unique words")
     words_appearing_once = [word for word, count in word_count.items() if count == 1]
 
-    # common words are more likely to have typos
-    # longer words are more likely to have typos
-    prior_word_is_typo = sorted(
+    # common words have more chances to form a typo
+    # longer words have more characters that could turn into a typo
+    # NOT DONE: longer words are less likely to be unique words
+    common_word_and_prior = sorted(
         ((word, count * len(word)) for word, count in word_count.items()), key=lambda x: x[1], reverse=True
     )
 
     possible_typos = []
-    for common_word, prior_weight in prior_word_is_typo:
+    for common_word, prior_weight in common_word_and_prior:
         if prior_weight < DETECTION_THRESHOLD:
-            # arbitrary termination condition
+            # termination condition
             break
         if len(common_word) < 4:
             # skip these
